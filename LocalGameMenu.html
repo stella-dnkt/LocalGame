@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>ゲームポータル</title>
+<style>
+  body {
+    font-family: "Segoe UI", sans-serif;
+    background: linear-gradient(135deg, #f9f9f9, #e0e0e0);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  header {
+    text-align: center;
+    padding: 2rem 1rem;
+    background: #333;
+    color: #fff;
+    font-size: 1.8rem;
+    letter-spacing: 2px;
+  }
+  main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    padding: 3rem;
+    justify-items: center;
+  }
+  .card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 320px;
+    height: 180px;
+    text-decoration: none;
+    border-radius: 1rem;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    background: white;
+    color: #333;
+    font-size: 1.3rem;
+    font-weight: bold;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    color: #0077cc;
+  }
+  footer {
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.85rem;
+    color: #666;
+  }
+</style>
+</head>
+<body>
+  <header>🎮 My Game Portal</header>
+  <main>
+    <a href="https://stella-dnkt.github.io/LocalGame/su-doku.html" class="card">数独</a>
+    <a href="https://stella-dnkt.github.io/LocalGame/chin-i-so-.html" class="card">清一色待ち当て</a>
+    <a href="https://stella-dnkt.github.io/LocalGame/mainnsui-pa-.html" class="card">マインスイーパー</a>
+  </main>
+  <footer>&copy; 2025 My Games</footer>
+</body>
+</html>
