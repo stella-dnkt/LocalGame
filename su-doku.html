@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>数独（ナンプレ）HTML版</title>
+  <style>
+    :root {
+      --gunjo: #1e3a8a;           /* 群青（外枠/3x3太線） */
+      --gunjo-thin: #4338ca;      /* 破線の色 */
+      --fg: #111827;
+      --muted: #6b7280;
+      --card: #ffffff;
+      --danger: #dc2626;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif; background: linear-gradient(#fff,#eef2ff); color: var(--fg); }
+
+    .container { width: min(100%, 1100px); margin: 0 auto; padding: 16px; }
+
+    /* ヘッダー */
+    .topbar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin: 4px 0 16px; }
+    .left { justify-self: start; display: inline-flex; align-items: center; gap: 8px; }
+    .center { justify-self: center; font-weight: 700; }
+    .right { justify-self: end; }
+    select, button { font-size: 14px; }
+    select { padding: 6px 10px; border-radius: 12px; border: 1px solid #c7d2fe; background: #fff; }
+    .btn { padding: 8px 14px; border-radius: 14px; border: 1px solid #c7d2fe; background:#fff; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+    .btn:hover { box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+
+    /* レイアウト */
+    .layout { display: grid; grid-template-columns: 1fr; gap: 20px; }
+    @media (min-width: 980px) { .layout { grid-template-columns: 1fr 320px; align-items: start; }}
+
+    /* 盤面 */
+    .board-wrap { position: relative; width: min(90vw,520px); aspect-ratio: 1/1; margin: 0 auto; border: 4px solid var(--gunjo); border-radius: 14px; background:#fff; overflow:hidden; }
+    .cells { display:grid; grid-template-columns: repeat(9,1fr); grid-template-rows: repeat(9,1fr); height:100%; }
+    .cell { display:flex; align-items:center; justify-content:center; font-weight:700; font-size:clamp(16px,2.6vw,24px); color:var(--gunjo); background:transparent; cursor:pointer; }
+
+    /* 3x3 の太線（外枠も太線なのでセル側は左・上だけに付与して二重化防止） */
+    .bl3 { border-left: 2px solid var(--gunjo); }
+    .bt3 { border-top: 2px solid var(--gunjo); }
+
+    /* 3x3 内部は破線（左・上のみ） */
+    .bl-dash { border-left: 1px dashed var(--gunjo-thin); }
+    .bt-dash { border-top: 1px dashed var(--gunjo-thin); }
+
+    .cell.given { color:#0f172a; }
+    .cell.selected { outline:2px solid #a5b4fc; background:#eef2ff; }
+    .cell.samegroup { background:#f3f4ff; }
+    .cell.samenum { background:#eaeaff; }
+    .cell.conflict { color:var(--danger); }
+
+    .notes { display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); width:90%; height:90%; }
+    .note { font-size:clamp(9px,1.5vw,11px); color:var(--gunjo-thin); display:flex; align-items:center; justify-content:center; }
+
+    /* パネル */
+    .panel { background: var(--card); border:1px solid #e0e7ff; border-radius: 18px; padding: 14px; box-shadow: 0 1px 10px rgba(0,0,0,.04); }
+    .panel-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+    .keypad { display:grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .keypad button { height: 48px; border-radius: 14px; border:1px solid #c7d2fe; background:#fff; font-weight:700; color:var(--gunjo); cursor:pointer; }
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+
+    .hint { font-size: 12px; color: var(--muted); margin-top: 10px; line-height: 1.6; }
+    .clear-msg { text-align:center; color:#059669; font-weight:700; margin-top:10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="left">
+        <label for="mode">モード切り替え</label>
+        <select id="mode">
+          <option>初級</option>
+          <option>中級</option>
+          <option>上級</option>
+        </select>
+      </div>
+      <div class="center">経過時間：<span id="elapsed">00:00</span></div>
+      <div class="right" style="display:flex; gap:8px; flex-wrap:wrap">
+        <button id="reset" class="btn">初期化</button>
+        <button id="newGame" class="btn">新規ゲーム</button>
+      </div>
+    </div>
+
+    <div class="layout">
+      <!-- 盤面 -->
+      <div>
+        <div class="board-wrap">
+          <div id="cells" class="cells"></div>
+        </div>
+        <div id="clear" class="clear-msg" style="display:none">クリア！おめでとうございます 🎉</div>
+      </div>
+
+      <!-- 操作パネル -->
+      <aside class="panel">
+        <div class="panel-header">
+          <div style="font-weight:600">数字選択</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+            <button id="noteToggle" class="btn">メモモード：OFF</button>
+            <button id="hlLineToggle" class="btn">行列/ブロック：ON</button>
+            <button id="hlSameToggle" class="btn">同値ハイライト：ON</button>
+          </div>
+        </div>
+        <div id="keypad" class="keypad"></div>
+        <div class="row">
+          <button id="erase" class="btn">消去</button>
+          <button id="pause" class="btn">一時停止</button>
+        </div>
+        <div class="hint">
+          ・外枠と 3×3 境界は<strong style="color:var(--gunjo)">太線</strong><br>
+          ・3×3 内部は<strong style="color:var(--gunjo-thin)">破線</strong><br>
+          ・選択行/列/ブロック、同値のハイライトは個別にON/OFFできます（L / S キー）
+        </div>
+      </aside>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const MODE_TO_CLUES = { "初級": 42, "中級": 34, "上級": 26 };
+
+  // —— ユーティリティ ——
+  const deepCopy = (b) => b.map(r => r.slice());
+  const shuffle = (arr) => { const a = arr.slice(); for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; };
+  const nextEmpty = (b) => { for (let r=0;r<9;r++) for (let c=0;c<9;c++) if (b[r][c]===0) return [r,c]; return null; };
+  const isValid = (b, r, c, v) => {
+    for (let x=0;x<9;x++) if (b[r][x]===v) return false;
+    for (let y=0;y<9;y++) if (b[y][c]===v) return false;
+    const br = Math.floor(r/3)*3, bc = Math.floor(c/3)*3;
+    for (let y=0;y<3;y++) for (let x=0;x<3;x++) { if (b[br+y][bc+x]===v) return false; }
+    return true;
+  };
+  const solveBoard = (b) => { const e=nextEmpty(b); if(!e) return true; const [r,c]=e; for (const n of shuffle([1,2,3,4,5,6,7,8,9])) { if (isValid(b,r,c,n)) { b[r][c]=n; if (solveBoard(b)) return true; b[r][c]=0; } } return false; };
+  const countSolutions = (b, limit=2) => { const e=nextEmpty(b); if(!e) return 1; let total=0; const [r,c]=e; for (let n=1;n<=9;n++){ if(isValid(b,r,c,n)){ b[r][c]=n; total+=countSolutions(b,limit); b[r][c]=0; if(total>=limit) return total; }} return total; };
+  const generateCompleteBoard = () => { const b=Array.from({length:9},()=>Array(9).fill(0)); solveBoard(b); return b; };
+  const generatePuzzle = (mode) => {
+    const solution = generateCompleteBoard();
+    const puzzle = deepCopy(solution);
+    const target = MODE_TO_CLUES[mode] ?? 42;
+    let clues = 81;
+    const cells = shuffle([...Array(81).keys()]);
+    while (cells.length && clues > target) {
+      const pos = cells.pop();
+      const r = Math.floor(pos/9), c = pos%9;
+      if (puzzle[r][c]===0) continue;
+      const back = puzzle[r][c];
+      puzzle[r][c]=0;
+      const tmp = deepCopy(puzzle);
+      const solutions = countSolutions(tmp, 2);
+      if (solutions !== 1) { puzzle[r][c]=back; }
+      else { clues--; }
+    }
+    return { puzzle, solution };
+  };
+  const fmt = (sec)=>{ const h=String(Math.floor(sec/3600)).padStart(2,'0'); const m=String(Math.floor((sec%3600)/60)).padStart(2,'0'); const s=String(sec%60).padStart(2,'0'); return h!=='00'?`${h}:${m}:${s}`:`${m}:${s}`; };
+
+  // —— 状態 ——
+  let mode = '初級';
+  let puzzle, solution, grid, givenMask;
+  let notes = new Map(); // key = idx -> Set<number>
+  let selected = null;
+  let noteMode = false;
+  let highlightLine = true;   // 行/列/ブロックのハイライト
+  let highlightSame = true;   // 同じ数字のハイライト
+  let elapsed = 0, running = true, timerId = null;
+  let cleared = false;
+
+  // —— 要素参照 ——
+  const elMode = document.getElementById('mode');
+  const elCells = document.getElementById('cells');
+  const elElapsed = document.getElementById('elapsed');
+  const elReset = document.getElementById('reset');
+  const elKeypad = document.getElementById('keypad');
+  const elNote = document.getElementById('noteToggle');
+  const elHlLine = document.getElementById('hlLineToggle');
+  const elHlSame = document.getElementById('hlSameToggle');
+  const elNewGame = document.getElementById('newGame');
+  const elErase = document.getElementById('erase');
+  const elPause = document.getElementById('pause');
+  const elClear = document.getElementById('clear');
+
+  // —— 初期化 ——
+  function newGame(newMode = mode) {
+    mode = newMode;
+    const data = generatePuzzle(mode);
+    puzzle = data.puzzle; solution = data.solution; grid = deepCopy(puzzle);
+    givenMask = grid.flat().map(v=>v!==0);
+    notes = new Map(); selected = null; elapsed = 0; running = true; cleared = false;
+    elClear.style.display = 'none';
+    // タイマーは最初の一手まで開始しない
+    if (timerId) { clearInterval(timerId); timerId = null; }
+    elElapsed.textContent = fmt(elapsed);
+    renderAll();
+  }
+
+  function resetGame() { // 現在の盤面を初期状態へ
+    grid = deepCopy(puzzle);
+    notes = new Map(); selected = null; elapsed = 0; running = true; cleared = false;
+    elClear.style.display = 'none';
+    // タイマーは一手目まで動かさない
+    if (timerId) { clearInterval(timerId); timerId = null; }
+    elElapsed.textContent = fmt(elapsed);
+    renderAll();
+  }
+
+  function startTimer(){ if (timerId) clearInterval(timerId); timerId = setInterval(()=>{ if(running){ elapsed++; elElapsed.textContent = fmt(elapsed);} }, 1000); elElapsed.textContent = fmt(elapsed); }
+
+  function maybeStartTimer(){ if (timerId == null) startTimer(); }
+
+  // —— レンダリング ——
+  function renderAll(){
+    // セル生成
+    if (elCells.childElementCount !== 81) {
+      elCells.innerHTML = '';
+      for (let i=0;i<81;i++) {
+        const btn = document.createElement('button');
+        btn.className = 'cell';
+        btn.dataset.idx = i;
+        btn.addEventListener('click', () => onCellClick(i));
+        elCells.appendChild(btn);
+      }
+    }
+    // キーパッド
+    if (elKeypad.childElementCount !== 9) {
+      elKeypad.innerHTML = '';
+      for (let i=1;i<=9;i++) {
+        const b = document.createElement('button');
+        b.textContent = String(i);
+        b.addEventListener('click',()=> setValue(i));
+        elKeypad.appendChild(b);
+      }
+    }
+    updateCells();
+  }
+
+  function updateCells(){
+    for (let idx=0; idx<81; idx++) {
+      const el = elCells.children[idx];
+      const r = Math.floor(idx/9), c = idx%9;
+      const val = grid[r][c];
+
+      // ベースクラス
+      el.className = 'cell';
+
+      // 線の付与（左・上のみ）
+      if (c>0) {
+        if (c%3===0) el.classList.add('bl3');
+        else el.classList.add('bl-dash');
+      }
+      if (r>0) {
+        if (r%3===0) el.classList.add('bt3');
+        else el.classList.add('bt-dash');
+      }
+
+      if (givenMask[idx]) el.classList.add('given');
+      if (selected === idx) el.classList.add('selected');
+      if (selected != null){
+        const sr = Math.floor(selected/9), sc = selected%9;
+        if (highlightLine) {
+          const sameGroup = (r===sr || c===sc || (Math.floor(r/3)===Math.floor(sr/3) && Math.floor(c/3)===Math.floor(sc/3)));
+          if (sameGroup) el.classList.add('samegroup');
+        }
+        if (highlightSame) {
+          const selVal = grid[sr][sc];
+          if (selVal!==0 && selVal===val) el.classList.add('samenum');
+        }
+      }
+      const conflict = isConflictDisplay(r,c,val);
+      if (conflict) el.classList.add('conflict');
+
+      // 内容
+      if (val !== 0) {
+        el.innerHTML = String(val);
+      } else {
+        const nset = notes.get(idx) || new Set();
+        let html = '<div class="notes">';
+        for (let k=1;k<=9;k++) html += `<div class="note">${nset.has(k)?k:''}</div>`;
+        html += '</div>';
+        el.innerHTML = html;
+      }
+    }
+  }
+
+  function isConflictDisplay(r,c,val){
+    if (val===0) return false;
+    // 行
+    for (let x=0;x<9;x++) if (x!==c && grid[r][x]===val) return true;
+    // 列
+    for (let y=0;y<9;y++) if (y!==r && grid[y][c]===val) return true;
+    // ブロック
+    const br=Math.floor(r/3)*3, bc=Math.floor(c/3)*3;
+    for (let y=0;y<3;y++) for (let x=0;x<3;x++) {
+      const rr=br+y, cc=bc+x; if (!(rr===r && cc===c) && grid[rr][cc]===val) return true;
+    }
+    return false;
+  }
+
+  // —— 操作 ——
+  function onCellClick(idx){ selected = idx; updateCells(); }
+
+  function setValue(n){
+    if (selected==null) return;
+    const r=Math.floor(selected/9), c=selected%9;
+    if (puzzle[r][c]!==0) return; // 与えられたマスは不可
+    // 一手目でタイマー開始
+    maybeStartTimer();
+    if (noteMode) {
+      const key = selected;
+      const set = new Set(notes.get(key) || []);
+      if (set.has(n)) set.delete(n); else set.add(n);
+      notes.set(key,set);
+    } else {
+      grid[r][c]=n; // 値を入れる
+      notes.delete(selected);
+    }
+    updateCells();
+    checkClear();
+  }
+
+  function erase(){
+    if (selected==null) return;
+    const r=Math.floor(selected/9), c=selected%9;
+    if (puzzle[r][c]!==0) return;
+    // 一手目でタイマー開始（消去も手として扱う）
+    maybeStartTimer();
+    grid[r][c]=0; notes.delete(selected);
+    updateCells();
+  }
+
+  function toggleNote(){
+    noteMode = !noteMode;
+    elNote.textContent = `メモモード：${noteMode? 'ON':'OFF'}`;
+  }
+
+  function toggleHighlightLine(){
+    highlightLine = !highlightLine;
+    elHlLine.textContent = `行列/ブロック：${highlightLine? 'ON':'OFF'}`;
+    updateCells();
+  }
+
+  function toggleHighlightSame(){
+    highlightSame = !highlightSame;
+    elHlSame.textContent = `同値ハイライト：${highlightSame? 'ON':'OFF'}`;
+    updateCells();
+  }
+
+  function togglePause(){ running = !running; elPause.textContent = running? '一時停止':'再開'; }
+
+  function checkClear(){
+    for (let r=0;r<9;r++) for (let c=0;c<9;c++) if (grid[r][c]===0) return; // 未完
+    // 厳密一致
+    for (let r=0;r<9;r++) for (let c=0;c<9;c++) if (grid[r][c]!==solution[r][c]) return;
+    running=false; cleared=true; elClear.style.display='block';
+  }
+
+  // —— イベント ——
+  elMode.addEventListener('change', e => newGame(e.target.value));
+  elReset.addEventListener('click', resetGame);
+  elNewGame.addEventListener('click', () => newGame(mode));
+  elNote.addEventListener('click', toggleNote);
+  elHlLine.addEventListener('click', toggleHighlightLine);
+  elHlSame.addEventListener('click', toggleHighlightSame);
+  elErase.addEventListener('click', erase);
+  elPause.addEventListener('click', togglePause);
+  // キーボード入力（選択中セルに 1..9/0/Backspace）
+  window.addEventListener('keydown', (ev)=>{
+    if (selected==null) return;
+    const k = ev.key;
+    if (/^[1-9]$/.test(k)) setValue(Number(k));
+    else if (k==='0' || k==='Backspace' || k==='Delete') erase();
+    else if (k==='n' || k==='N') toggleNote();
+    else if (k==='l' || k==='L') toggleHighlightLine();
+    else if (k==='s' || k==='S') toggleHighlightSame();
+  });
+
+  // 起動
+  newGame('初級');
+})();
+</script>
+</body>
+</html>

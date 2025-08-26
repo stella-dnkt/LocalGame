@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>シンプル・マインスイーパー</title>
+<style>
+  :root { --cell: 32px; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    display:flex; flex-direction:column; align-items:center;
+    gap:12px; margin:20px;
+  }
+  .toolbar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .toolbar span { font-weight: 600; }
+  .board {
+    display:grid;
+    grid-template-columns: repeat(var(--cols), var(--cell));
+    gap:2px;
+    user-select:none;
+    touch-action: manipulation;
+    background:#aaa;             /* 盤全体の背景 */
+    padding:4px;                 /* 周囲に余白 */
+    border:2px solid #333;       /* 黒い外枠 */
+    border-radius:8px;
+  }
+  .cell {
+    width: var(--cell); height: var(--cell);
+    display:flex; align-items:center; justify-content:center;
+    border:1px solid #888;       /* セル境界線 */
+    background:#ccc;             /* セル初期背景グレー */
+    font-weight:700; cursor:pointer; border-radius:4px;
+  }
+  .cell.revealed { background:#eee; border-color:#cfcfcf; cursor:default; }
+  .cell.mine.revealed { background:#f8c5c5; }
+  .cell.flag::after { content:"🚩"; }
+  .cell.revealed.number0 { color: transparent; }
+  .cell.revealed.number1 { color:#1976d2; }
+  .cell.revealed.number2 { color:#2e7d32; }
+  .cell.revealed.number3 { color:#d32f2f; }
+  .cell.revealed.number4 { color:#512da8; }
+  .cell.revealed.number5 { color:#6d4c41; }
+  .cell.revealed.number6 { color:#00838f; }
+  .cell.revealed.number7 { color:#000000; }
+  .cell.revealed.number8 { color:#616161; }
+  button, select {
+    padding:6px 10px; border-radius:10px; border:1px solid #bdbdbd;
+    background:#f7f7f7; font-weight:600;
+  }
+  .smiley { font-size:18px; }
+  .muted { opacity:.55; }
+
+  /* ヒント表示用 */
+  .hint {
+    outline:3px dashed #ff9800;
+    outline-offset:-3px;
+    animation: pulse 1s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255,152,0,.6); }
+    70% { box-shadow: 0 0 0 8px rgba(255,152,0,0); }
+    100% { box-shadow: 0 0 0 0 rgba(255,152,0,0); }
+  }
+</style>
+</head>
+<body>
+  <div class="toolbar">
+    <label>レベル:
+      <select id="level">
+        <option value="9,9,10">初級 9×9（10）</option>
+        <option value="16,16,40">中級 16×16（40）</option>
+        <option value="30,16,99">上級 30×16（99）</option>
+      </select>
+    </label>
+    <span>💣 残り: <span id="minesLeft">10</span></span>
+    <button id="pause">⏸ 一時停止</button>
+    <button id="assist">🆘 お助け(<span id="assistLeft">5</span>)</button>
+    <button id="reset" class="smiley">🔁 リセット</button>
+    <span>⏱ <span id="time">0</span>s</span>
+    <span id="status" class="muted">進行前</span>
+  </div>
+
+  <div id="board" class="board" style="--cols:9;"></div>
+
+  <script>
+  (() => {
+    const boardEl = document.getElementById('board');
+    const levelEl = document.getElementById('level');
+    const minesLeftEl = document.getElementById('minesLeft');
+    const timeEl = document.getElementById('time');
+    const resetBtn = document.getElementById('reset');
+    const pauseBtn = document.getElementById('pause');
+    const assistBtn = document.getElementById('assist');
+    const assistLeftEl = document.getElementById('assistLeft');
+    const statusEl = document.getElementById('status');
+
+    let cols = 9, rows = 9, mines = 10;
+    let grid, revealedCount, flags, started, timerId, seconds, alive, paused;
+    let assistLeft = 5;
+    let lastHintCell = null;
+
+    function setStatus(text) { statusEl.textContent = text; }
+
+    function assistQuotaFor(c, r, m) {
+      if (c===9 && r===9 && m===10) return 5;     // 初級
+      if (c===16 && r===16 && m===40) return 4;   // 中級
+      if (c===30 && r===16 && m===99) return 3;   // 上級
+      return 3; // カスタム時のデフォルト
+    }
+
+    function init(c = cols, r = rows, m = mines) {
+      cols = c; rows = r; mines = m;
+      boardEl.style.setProperty('--cols', cols);
+      boardEl.innerHTML = '';
+      grid = Array.from({ length: rows }, () =>
+        Array.from({ length: cols }, () => ({
+          mine:false, number:0, revealed:false, flagged:false, el:null
+        }))
+      );
+      revealedCount = 0; flags = 0; started = false; seconds = 0; alive = true; paused = false;
+      clearInterval(timerId); timeEl.textContent = '0'; minesLeftEl.textContent = mines;
+      pauseBtn.textContent = '⏸ 一時停止'; pauseBtn.disabled = false;
+      resetBtn.textContent = '🔁 リセット';
+      setStatus('進行前');
+
+      // お助け回数リセット
+      assistLeft = assistQuotaFor(cols, rows, mines);
+      assistLeftEl.textContent = assistLeft;
+      assistBtn.disabled = (assistLeft <= 0);
+
+      lastHintCell = null;
+
+      createCells();
+    }
+
+    function createCells() {
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const div = document.createElement('div');
+          div.className = 'cell';
+          div.dataset.x = x; div.dataset.y = y;
+          div.addEventListener('contextmenu', e => e.preventDefault());
+          div.addEventListener('mousedown', e => e.preventDefault());
+          div.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            if (!alive || paused) return;
+            if (e.button === 2) { toggleFlag(x, y); return; }
+            reveal(x, y, true);
+          });
+          grid[y][x].el = div;
+          boardEl.appendChild(div);
+        }
+      }
+    }
+
+    function neighborsCoords(x, y) {
+      const coords = [];
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (dx === 0 && dy === 0) continue;
+          const nx = x + dx, ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+          coords.push([nx, ny]);
+        }
+      }
+      return coords;
+    }
+
+    function placeMines(avoidX, avoidY) {
+      let placed = 0;
+      while (placed < mines) {
+        const x = Math.floor(Math.random() * cols);
+        const y = Math.floor(Math.random() * rows);
+        const cell = grid[y][x];
+        if (cell.mine) continue;
+        if (Math.abs(x - avoidX) <= 1 && Math.abs(y - avoidY) <= 1) continue; // 初手安全
+        cell.mine = true;
+        placed++;
+      }
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          if (grid[y][x].mine) continue;
+          const n = neighborsCoords(x, y).filter(([nx, ny]) => grid[ny][nx].mine).length;
+          grid[y][x].number = n;
+        }
+      }
+    }
+
+    function startTimer() {
+      clearInterval(timerId);
+      timerId = setInterval(() => { seconds++; timeEl.textContent = String(seconds); }, 1000);
+    }
+    function stopTimer() { clearInterval(timerId); }
+
+    function togglePause(forceState = null) {
+      if (!alive) return;
+      if (!started) return;
+      paused = forceState !== null ? forceState : !paused;
+      if (paused) {
+        stopTimer();
+        setStatus('一時停止中');
+        pauseBtn.textContent = '▶ 再開';
+      } else {
+        startTimer();
+        setStatus('進行中');
+        pauseBtn.textContent = '⏸ 一時停止';
+      }
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) togglePause(true);
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') { e.preventDefault(); togglePause(); }
+    });
+
+    function reveal(x, y, firstClick) {
+      const cell = grid[y][x];
+      if (cell.revealed || cell.flagged) return;
+
+      // 既存のヒント枠を消す
+      clearHint();
+
+      if (!started) {
+        placeMines(x, y);
+        started = true;
+        startTimer();
+        setStatus('進行中');
+      }
+
+      cell.revealed = true;
+      cell.el.classList.add('revealed');
+
+      if (cell.mine) {
+        cell.el.classList.add('mine');
+        cell.el.textContent = '💣';
+        gameOver(false);
+        return;
+      }
+
+      revealedCount++;
+      if (cell.number > 0) {
+        cell.el.textContent = cell.number;
+        cell.el.classList.add('number' + cell.number);
+      } else {
+        cell.el.classList.add('number0');
+        flood(x, y);
+      }
+      checkWin();
+    }
+
+    function flood(x, y) {
+      neighborsCoords(x, y).forEach(([nx, ny]) => {
+        const n = grid[ny][nx];
+        if (!n.revealed && !n.mine && !n.flagged) {
+          reveal(nx, ny, false);
+        }
+      });
+    }
+
+    function toggleFlag(x, y) {
+      const cell = grid[y][x];
+      if (cell.revealed) return;
+      cell.flagged = !cell.flagged;
+      cell.el.classList.toggle('flag', cell.flagged);
+      cell.el.textContent = cell.flagged ? '🚩' : '';
+      flags += cell.flagged ? 1 : -1;
+      minesLeftEl.textContent = mines - flags;
+    }
+
+    function revealAllMines() {
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const c = grid[ny=y]?.[nx=x] ?? grid[y][x]; // safety
+          const cell = grid[y][x];
+          if (cell.mine) {
+            cell.el.classList.add('revealed','mine');
+            if (!cell.flagged) cell.el.textContent = '💣';
+          }
+        }
+      }
+    }
+
+    function gameOver(win) {
+      alive = false;
+      stopTimer();
+      if (!win) {
+        revealAllMines();
+        setStatus('爆発！リセットして再開してね');
+      } else {
+        setStatus('クリア！おめでとう');
+      }
+      pauseBtn.disabled = true;
+      pauseBtn.textContent = '⏸ 一時停止';
+      assistBtn.disabled = true;
+      clearHint();
+    }
+
+    function checkWin() {
+      const safe = cols * rows - mines;
+      if (revealedCount >= safe) gameOver(true);
+    }
+
+    /* ===== お助けロジック =====
+       1) 盤開始前: 盤中央など任意のマスを提示（初手安全仕様により安全）
+       2) 盤進行中: 「旗の数＝数字」な開示セルの未開示隣接は安全 → それを提示
+       3) 上記で見つからなければ、内部情報で爆弾でない未開示マスを提示（チート的保証）
+    */
+    function clearHint() {
+      if (lastHintCell) {
+        lastHintCell.classList.remove('hint');
+        lastHintCell = null;
+      }
+    }
+
+    function findDeductivelySafe() {
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const c = grid[y][x];
+          if (!c.revealed || c.number === 0) continue;
+          const neigh = neighborsCoords(x, y);
+          const hidden = neigh.filter(([nx, ny]) => !grid[ny][nx].revealed && !grid[ny][nx].flagged);
+          if (hidden.length === 0) continue;
+          const flagsAround = neigh.filter(([nx, ny]) => grid[ny][nx].flagged).length;
+          if (flagsAround === c.number) {
+            // 全hiddenは安全
+            const [sx, sy] = hidden[0];
+            return grid[sy][sx];
+          }
+        }
+      }
+      return null;
+    }
+
+    function findAnySafeCell() {
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const c = grid[y][x];
+          if (!c.revealed && !c.flagged && !c.mine) return c;
+        }
+      }
+      return null;
+    }
+
+    function suggestSafeCell() {
+      if (!alive) return;
+      if (assistLeft <= 0) return;
+
+      clearHint();
+
+      let target = null;
+
+      if (!started) {
+        // 開始前は中央推奨（任意でOK。初手安全規則により安全）
+        const cx = Math.floor(cols / 2), cy = Math.floor(rows / 2);
+        target = grid[cy][cx];
+      } else {
+        target = findDeductivelySafe() || findAnySafeCell();
+      }
+
+      if (!target) {
+        setStatus('ヒントなし（安全マスが見つかりません）');
+        return;
+      }
+
+      target.el.classList.add('hint');
+      lastHintCell = target.el;
+
+      assistLeft--;
+      assistLeftEl.textContent = assistLeft;
+      if (assistLeft <= 0) assistBtn.disabled = true;
+
+      setStatus('🆘 このマスは安全だよ（ハイライト中）');
+      // 3秒後に自動でハイライト解除（任意）
+      setTimeout(() => { if (lastHintCell === target.el) clearHint(); }, 3000);
+    }
+
+    levelEl.addEventListener('change', () => {
+      const [c, r, m] = levelEl.value.split(',').map(Number);
+      init(c, r, m);
+    });
+
+    resetBtn.addEventListener('click', () => init());
+    pauseBtn.addEventListener('click', () => togglePause());
+    assistBtn.addEventListener('click', () => suggestSafeCell());
+
+    init();
+  })();
+  </script>
+</body>
+</html>
