@@ -6,19 +6,19 @@
 <title>数独</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:sans-serif;background:#f5f5f5;display:flex;justify-content:center;padding:1rem;}
-#app{width:100%;max-width:480px;background:#fff;border-radius:12px;padding:1.2rem;box-shadow:0 2px 12px rgba(0,0,0,.1);}
-h1{text-align:center;font-size:1.2rem;font-weight:600;margin-bottom:1rem;color:#333;}
-.df{display:flex;gap:6px;justify-content:center;margin-bottom:1rem;}
+body{font-family:sans-serif;background:#fff;display:flex;justify-content:center;padding:4px 4px 1rem;}
+#app{width:100%;max-width:480px;}
+.df{display:flex;gap:6px;justify-content:center;margin-bottom:8px;}
 .df button{flex:1;font-size:13px;padding:6px 0;border:1px solid #bbb;border-radius:6px;background:#fff;color:#222;cursor:pointer;}
 .df button.act{background:#dceeff;border-color:#5599cc;color:#1155aa;}
-.gw{display:flex;justify-content:center;margin-bottom:1rem;}
-table#sg{border-collapse:collapse;border:3px solid #333;width:100%;}
+.opts{display:flex;gap:10px;justify-content:center;margin-bottom:8px;flex-wrap:wrap;}
+.opts label{font-size:13px;color:#444;display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none;}
+.gw{display:flex;justify-content:center;margin-bottom:8px;}
+table#sg{border-collapse:collapse;border:3px solid #333;}
 table#sg td{
   text-align:center;vertical-align:middle;
   font-weight:500;cursor:pointer;
   border:1px solid #aaa;background:#fff;color:#222;
-  /* サイズはJS側でviewportに合わせる */
 }
 table#sg tr:nth-child(3n) td{border-bottom:3px solid #333;}
 table#sg td:nth-child(3n){border-right:3px solid #333;}
@@ -28,23 +28,26 @@ table#sg td.hl{background:#e8f0f8;}
 table#sg td.sn{background:#b8d4ea;}
 table#sg td.err{color:#d32;}
 table#sg td.hnt{color:#1a7;}
-.np{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:1rem;}
+.np{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:8px;}
 .np button{aspect-ratio:1;font-size:1.2rem;font-weight:500;border:1px solid #bbb;border-radius:6px;background:#fff;color:#222;cursor:pointer;}
 .np button:active{background:#eee;}
-.ctrl{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:.5rem;}
+.ctrl{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:4px;}
 .ctrl button{font-size:13px;padding:7px 14px;border:1px solid #bbb;border-radius:6px;background:#fff;color:#222;cursor:pointer;}
 .ctrl button:active{background:#eee;}
-#st{text-align:center;font-size:14px;color:#555;min-height:22px;margin-top:.3rem;}
+#st{text-align:center;font-size:14px;color:#555;min-height:20px;}
 .win{color:#1a7;font-weight:600;font-size:16px;}
 </style>
 </head>
 <body>
 <div id="app">
-  <h1>数独</h1>
   <div class="df">
     <button class="act" onclick="setDiff('easy')">かんたん</button>
     <button onclick="setDiff('medium')">ふつう</button>
     <button onclick="setDiff('hard')">むずかしい</button>
+  </div>
+  <div class="opts">
+    <label><input type="checkbox" id="optHL" checked> 同列・同行ハイライト</label>
+    <label><input type="checkbox" id="optSN" checked> 同数ハイライト</label>
   </div>
   <div class="gw"><table id="sg"></table></div>
   <div class="np">
@@ -70,16 +73,15 @@ table#sg td.hnt{color:#1a7;}
 <script>
 let sol=[],puz=[],ug=[],sel=null,diff='easy',won=false;
 
-// グリッドのセルサイズをviewportに合わせる
 function resizeCells(){
-  const size = Math.floor((Math.min(document.getElementById('app').clientWidth - 24, 440)) / 9);
+  const w = document.getElementById('app').clientWidth - 8;
+  const size = Math.floor(Math.min(w, 440) / 9);
   document.querySelectorAll('#sg td').forEach(td=>{
     td.style.width = size+'px';
     td.style.height = size+'px';
     td.style.fontSize = Math.floor(size*0.5)+'px';
   });
 }
-
 function setDiff(d){
   diff=d;
   document.querySelectorAll('.df button').forEach(b=>{
@@ -125,18 +127,24 @@ function render(){
     }
     t.appendChild(tr);
   }
-  resizeCells();
-  hl();
+  resizeCells();hl();
 }
 function hl(){
+  const useHL = document.getElementById('optHL').checked;
+  const useSN = document.getElementById('optSN').checked;
   document.querySelectorAll('#sg td').forEach(td=>{
     const r=+td.dataset.r,c=+td.dataset.c;
     td.classList.remove('sel','hl','sn','err','hnt');
     if(!sel)return;
     const {r:sr,c:sc}=sel,sv=ug[sr][sc];
-    if(r===sr&&c===sc)td.classList.add('sel');
-    else if(r===sr||c===sc||r-r%3===sr-sr%3&&c-c%3===sc-sc%3)td.classList.add('hl');
-    if(sv&&ug[r][c]===sv&&!(r===sr&&c===sc))td.classList.add('sn');
+    if(r===sr&&c===sc){
+      td.classList.add('sel');
+    } else {
+      if(useHL && (r===sr||c===sc||r-r%3===sr-sr%3&&c-c%3===sc-sc%3))
+        td.classList.add('hl');
+      if(useSN && sv && ug[r][c]===sv)
+        td.classList.add('sn');
+    }
     if(puz[r][c]===0&&ug[r][c]&&ug[r][c]!==sol[r][c])td.classList.add('err');
   });
 }
@@ -180,6 +188,8 @@ document.addEventListener('keydown',e=>{
   if(n>=1&&n<=9)inp(n);
   else if(['Backspace','Delete','0'].includes(e.key))inp(0);
 });
+document.getElementById('optHL').addEventListener('change',hl);
+document.getElementById('optSN').addEventListener('change',hl);
 window.addEventListener('resize',resizeCells);
 newGame();
 </script>
