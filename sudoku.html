@@ -1,198 +1,163 @@
 
 <style>
-#sw { padding: 1rem 0; font-family: var(--font-sans); }
-h2.sr-only { position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0); }
-.grid-wrap { display: flex; justify-content: center; margin-bottom: 1rem; }
-table.sgrid { border-collapse: collapse; }
-table.sgrid td {
-  width: 38px; height: 38px; text-align: center; vertical-align: middle;
-  font-size: 18px; font-weight: 500; cursor: pointer;
-  border: 1px solid var(--color-border-secondary);
-  background: var(--color-background-primary);
-  color: var(--color-text-primary);
-  user-select: none;
+#sw3{padding:1rem 0;font-family:sans-serif;}
+h2.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);}
+.gw{display:flex;justify-content:center;margin-bottom:1rem;}
+table#sg{border-collapse:collapse;border:3px solid #333;}
+table#sg td{
+  width:38px;height:38px;text-align:center;vertical-align:middle;
+  font-size:18px;font-weight:500;cursor:pointer;
+  border:1px solid #aaa;background:#fff;color:#222;
+  box-sizing:border-box;
 }
-table.sgrid td.thick-right  { border-right:  2.5px solid var(--color-text-primary); }
-table.sgrid td.thick-bottom { border-bottom: 2.5px solid var(--color-text-primary); }
-table.sgrid td.thick-left   { border-left:   2.5px solid var(--color-text-primary); }
-table.sgrid td.thick-top    { border-top:    2.5px solid var(--color-text-primary); }
-table.sgrid td.given   { color: var(--color-text-primary); pointer-events: none; }
-table.sgrid td.selected  { background: #A8C8F0; }
-table.sgrid td.highlight { background: var(--color-background-secondary); }
-table.sgrid td.samenum   { background: #C8DCEF; }
-table.sgrid td.error     { color: #E24B4A; }
-table.sgrid td.hint-cell { color: #1D9E75; }
-.numpad { display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:1rem; }
-.numpad button { width:36px;height:36px;font-size:16px;font-weight:500; }
-.controls { display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:.5rem; }
-.controls button { font-size:13px;padding:6px 14px; }
-.difficulty { display:flex;gap:8px;justify-content:center;margin-bottom:1rem; }
-.diff-btn { font-size:13px;padding:5px 14px; }
-.diff-btn.active { background:var(--color-background-info);border-color:var(--color-border-info);color:var(--color-text-info); }
-.status { text-align:center;font-size:14px;color:var(--color-text-secondary);min-height:22px; }
-.win-msg { color:#1D9E75;font-weight:500;font-size:16px; }
+table#sg tr:nth-child(3n) td{border-bottom:3px solid #333;}
+table#sg td:nth-child(3n){border-right:3px solid #333;}
+table#sg td.given{color:#222;pointer-events:none;font-weight:700;}
+table#sg td.sel{background:#90bce8;}
+table#sg td.hl{background:#e8f0f8;}
+table#sg td.sn{background:#b8d4ea;}
+table#sg td.err{color:#d32;}
+table#sg td.hnt{color:#1a7;}
+.np{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:1rem;}
+.np button,.ctrl button,.df button{
+  border:1px solid #bbb;border-radius:6px;background:#fff;color:#222;
+  cursor:pointer;font-size:14px;padding:0;
+}
+.np button{width:36px;height:36px;font-size:16px;}
+.np button:hover,.ctrl button:hover,.df button:hover{background:#eee;}
+.ctrl{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:.5rem;}
+.ctrl button{font-size:13px;padding:6px 14px;}
+.df{display:flex;gap:8px;justify-content:center;margin-bottom:1rem;}
+.df button{font-size:13px;padding:5px 14px;}
+.df button.act{background:#dceeff;border-color:#5599cc;color:#1155aa;}
+#st{text-align:center;font-size:14px;color:#555;min-height:22px;}
+.win{color:#1a7;font-weight:600;font-size:16px;}
 </style>
 
-<div id="sw">
-<h2 class="sr-only">数独ゲーム — 9×9グリッドに1〜9の数字を入力してください</h2>
-
-<div class="difficulty">
-  <button class="diff-btn active" onclick="setDiff('easy')">かんたん</button>
-  <button class="diff-btn" onclick="setDiff('medium')">ふつう</button>
-  <button class="diff-btn" onclick="setDiff('hard')">むずかしい</button>
+<div id="sw3">
+<h2 class="sr-only">数独ゲーム</h2>
+<div class="df">
+  <button class="act" onclick="setDiff('easy')">かんたん</button>
+  <button onclick="setDiff('medium')">ふつう</button>
+  <button onclick="setDiff('hard')">むずかしい</button>
 </div>
-
-<div class="grid-wrap"><table class="sgrid" id="grid"></table></div>
-
-<div class="numpad">
-  <button onclick="inputNum(1)">1</button><button onclick="inputNum(2)">2</button>
-  <button onclick="inputNum(3)">3</button><button onclick="inputNum(4)">4</button>
-  <button onclick="inputNum(5)">5</button><button onclick="inputNum(6)">6</button>
-  <button onclick="inputNum(7)">7</button><button onclick="inputNum(8)">8</button>
-  <button onclick="inputNum(9)">9</button><button onclick="inputNum(0)">✕</button>
+<div class="gw"><table id="sg"></table></div>
+<div class="np">
+  <button onclick="inp(1)">1</button><button onclick="inp(2)">2</button>
+  <button onclick="inp(3)">3</button><button onclick="inp(4)">4</button>
+  <button onclick="inp(5)">5</button><button onclick="inp(6)">6</button>
+  <button onclick="inp(7)">7</button><button onclick="inp(8)">8</button>
+  <button onclick="inp(9)">9</button><button onclick="inp(0)">✕</button>
 </div>
-
-<div class="controls">
+<div class="ctrl">
   <button onclick="newGame()">新しいゲーム</button>
-  <button onclick="giveHint()">ヒント ↗</button>
-  <button onclick="checkBoard()">答え合わせ</button>
+  <button onclick="hint()">ヒント ↗</button>
+  <button onclick="chk()">答え合わせ</button>
 </div>
-<div class="status" id="status"></div>
+<div id="st"></div>
 </div>
 
 <script>
-let solution=[], puzzle=[], userGrid=[], selected=null, difficulty='easy', won=false;
+let sol=[],puz=[],ug=[],sel=null,diff='easy',won=false;
 
 function setDiff(d){
-  difficulty=d;
-  document.querySelectorAll('.diff-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim()==={easy:'かんたん',medium:'ふつう',hard:'むずかしい'}[d]));
+  diff=d;
+  document.querySelectorAll('.df button').forEach(b=>{
+    b.classList.toggle('act',b.textContent.trim()==={easy:'かんたん',medium:'ふつう',hard:'むずかしい'}[d]);
+  });
   newGame();
 }
-function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-function isValid(b,r,c,n){
-  for(let i=0;i<9;i++){if(b[r][i]===n||b[i][c]===n)return false;}
-  const br=Math.floor(r/3)*3,bc=Math.floor(c/3)*3;
-  for(let rr=br;rr<br+3;rr++)for(let cc=bc;cc<bc+3;cc++)if(b[rr][cc]===n)return false;
+function shuf(a){for(let i=a.length-1;i>0;i--){const j=0|Math.random()*(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
+function ok(b,r,c,n){
+  for(let i=0;i<9;i++)if(b[r][i]===n||b[i][c]===n)return false;
+  const br=r-r%3,bc=c-c%3;
+  for(let i=0;i<3;i++)for(let j=0;j<3;j++)if(b[br+i][bc+j]===n)return false;
   return true;
 }
-function solve(b){
-  for(let r=0;r<9;r++)for(let c=0;c<9;c++){
-    if(b[r][c]===0){
-      for(const n of shuffle([1,2,3,4,5,6,7,8,9])){
-        if(isValid(b,r,c,n)){b[r][c]=n;if(solve(b))return true;b[r][c]=0;}
-      }
-      return false;
+function slv(b){
+  for(let r=0;r<9;r++)for(let c=0;c<9;c++)if(b[r][c]===0){
+    for(const n of shuf([1,2,3,4,5,6,7,8,9])){
+      if(ok(b,r,c,n)){b[r][c]=n;if(slv(b))return true;b[r][c]=0;}
     }
+    return false;
   }
   return true;
 }
-function generatePuzzle(){
+function gen(){
   const b=Array.from({length:9},()=>Array(9).fill(0));
-  solve(b);
-  solution=b.map(r=>[...r]);
-  const clues={easy:38,medium:30,hard:24}[difficulty];
-  const cells=shuffle([...Array(81).keys()]);
-  puzzle=b.map(r=>[...r]);
-  for(let i=0;i<81-clues;i++){const idx=cells[i];puzzle[Math.floor(idx/9)][idx%9]=0;}
-  userGrid=puzzle.map(r=>[...r]);
+  slv(b);sol=b.map(r=>[...r]);
+  const keep={easy:38,medium:30,hard:24}[diff];
+  puz=b.map(r=>[...r]);
+  shuf([...Array(81).keys()]).slice(0,81-keep).forEach(i=>{puz[i/9|0][i%9]=0;});
+  ug=puz.map(r=>[...r]);
 }
-
-function cellClasses(r,c){
-  const cls=[];
-  if(c===2||c===5)cls.push('thick-right');
-  if(r===2||r===5)cls.push('thick-bottom');
-  if(c===0)cls.push('thick-left');
-  if(r===0)cls.push('thick-top');
-  if(c===8)cls.push('thick-right');
-  if(r===8)cls.push('thick-bottom');
-  return cls;
-}
-
-function renderGrid(){
-  const tbl=document.getElementById('grid');
-  tbl.innerHTML='';
+function render(){
+  const t=document.getElementById('sg');t.innerHTML='';
   for(let r=0;r<9;r++){
     const tr=document.createElement('tr');
     for(let c=0;c<9;c++){
       const td=document.createElement('td');
-      cellClasses(r,c).forEach(cl=>td.classList.add(cl));
-      if(puzzle[r][c]!==0)td.classList.add('given');
-      if(userGrid[r][c])td.textContent=userGrid[r][c];
+      if(puz[r][c])td.classList.add('given');
+      if(ug[r][c])td.textContent=ug[r][c];
       td.dataset.r=r;td.dataset.c=c;
-      td.onclick=()=>selectCell(r,c);
+      td.onclick=()=>{if(!won){sel={r,c};hl();}};
       tr.appendChild(td);
     }
-    tbl.appendChild(tr);
+    t.appendChild(tr);
   }
-  highlight();
+  hl();
 }
-
-function selectCell(r,c){if(won)return;selected={r,c};highlight();}
-
-function highlight(){
-  document.querySelectorAll('.sgrid td').forEach(td=>{
+function hl(){
+  document.querySelectorAll('#sg td').forEach(td=>{
     const r=+td.dataset.r,c=+td.dataset.c;
-    td.classList.remove('selected','highlight','samenum','error','hint-cell');
-    if(!selected)return;
-    const {r:sr,c:sc}=selected;
-    const selVal=userGrid[sr][sc];
-    if(r===sr&&c===sc){td.classList.add('selected');}
-    else if(r===sr||c===sc||(Math.floor(r/3)===Math.floor(sr/3)&&Math.floor(c/3)===Math.floor(sc/3))){td.classList.add('highlight');}
-    if(selVal&&userGrid[r][c]===selVal&&!(r===sr&&c===sc))td.classList.add('samenum');
-    if(puzzle[r][c]===0&&userGrid[r][c]&&userGrid[r][c]!==solution[r][c])td.classList.add('error');
+    td.classList.remove('sel','hl','sn','err','hnt');
+    if(!sel)return;
+    const {r:sr,c:sc}=sel,sv=ug[sr][sc];
+    if(r===sr&&c===sc)td.classList.add('sel');
+    else if(r===sr||c===sc||r-r%3===sr-sr%3&&c-c%3===sc-sc%3)td.classList.add('hl');
+    if(sv&&ug[r][c]===sv&&!(r===sr&&c===sc))td.classList.add('sn');
+    if(puz[r][c]===0&&ug[r][c]&&ug[r][c]!==sol[r][c])td.classList.add('err');
   });
 }
-
-function inputNum(n){
-  if(!selected||won)return;
-  const {r,c}=selected;
-  if(puzzle[r][c]!==0)return;
-  userGrid[r][c]=n;
-  const td=document.querySelector(`.sgrid td[data-r="${r}"][data-c="${c}"]`);
-  td.textContent=n||'';
-  td.classList.remove('hint-cell');
-  highlight();
-  checkWin();
+function inp(n){
+  if(!sel||won)return;
+  const{r,c}=sel;if(puz[r][c])return;
+  ug[r][c]=n;
+  const td=document.querySelector(`#sg td[data-r="${r}"][data-c="${c}"]`);
+  td.textContent=n||'';td.classList.remove('hnt');
+  hl();cwin();
 }
-
-function checkWin(){
-  for(let r=0;r<9;r++)for(let c=0;c<9;c++)if(userGrid[r][c]!==solution[r][c])return;
-  won=true;
-  document.getElementById('status').innerHTML='<span class="win-msg">🎉 おめでとう！クリアしました！</span>';
+function cwin(){
+  if(sol.every((row,r)=>row.every((v,c)=>v===ug[r][c]))){
+    won=true;document.getElementById('st').innerHTML='<span class="win">🎉 おめでとう！クリアしました！</span>';
+  }
 }
-
-function checkBoard(){
-  let err=0;
-  for(let r=0;r<9;r++)for(let c=0;c<9;c++)if(userGrid[r][c]&&userGrid[r][c]!==solution[r][c])err++;
-  const st=document.getElementById('status');
-  st.textContent=err===0?'ミスなし！この調子で！':`${err}か所まちがいがあります。`;
-  setTimeout(()=>{if(!won)st.textContent='';},2500);
+function chk(){
+  let e=0;
+  for(let r=0;r<9;r++)for(let c=0;c<9;c++)if(ug[r][c]&&ug[r][c]!==sol[r][c])e++;
+  const s=document.getElementById('st');
+  s.textContent=e?`${e}か所まちがいがあります。`:'ミスなし！この調子で！';
+  setTimeout(()=>{if(!won)s.textContent='';},2500);
 }
-
-function giveHint(){
-  const empties=[];
-  for(let r=0;r<9;r++)for(let c=0;c<9;c++)if(userGrid[r][c]===0)empties.push({r,c});
-  if(!empties.length)return;
-  const {r,c}=empties[Math.floor(Math.random()*empties.length)];
-  userGrid[r][c]=solution[r][c];
-  const td=document.querySelector(`.sgrid td[data-r="${r}"][data-c="${c}"]`);
-  td.textContent=solution[r][c];
-  td.classList.add('hint-cell');
-  selected={r,c};highlight();checkWin();
+function hint(){
+  const em=[];
+  for(let r=0;r<9;r++)for(let c=0;c<9;c++)if(!ug[r][c])em.push({r,c});
+  if(!em.length)return;
+  const{r,c}=em[0|Math.random()*em.length];
+  ug[r][c]=sol[r][c];
+  const td=document.querySelector(`#sg td[data-r="${r}"][data-c="${c}"]`);
+  td.textContent=sol[r][c];td.classList.add('hnt');
+  sel={r,c};hl();cwin();
 }
-
 function newGame(){
-  won=false;selected=null;
-  document.getElementById('status').textContent='';
-  generatePuzzle();renderGrid();
+  won=false;sel=null;document.getElementById('st').textContent='';
+  gen();render();
 }
-
 document.addEventListener('keydown',e=>{
-  if(!selected||won)return;
+  if(!sel||won)return;
   const n=parseInt(e.key);
-  if(n>=1&&n<=9)inputNum(n);
-  else if(['Backspace','Delete','0'].includes(e.key))inputNum(0);
+  if(n>=1&&n<=9)inp(n);
+  else if(['Backspace','Delete','0'].includes(e.key))inp(0);
 });
-
 newGame();
 </script>
