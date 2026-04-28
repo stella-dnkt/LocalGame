@@ -6,48 +6,99 @@
 <title>数独</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:sans-serif;background:#fff;display:flex;justify-content:center;padding:4px 4px 1rem;}
+body{font-family:sans-serif;display:flex;justify-content:center;padding:4px 4px 1rem;transition:background .2s;}
+
+/* ── WHITE ── */
+body.theme-white{background:#fff;}
+body.theme-white table#sg{border:3px solid #333;}
+body.theme-white table#sg td{background:#fff;color:#222;border:1px solid #aaa;}
+body.theme-white table#sg tr:nth-child(3n) td{border-bottom:3px solid #333;}
+body.theme-white table#sg td:nth-child(3n){border-right:3px solid #333;}
+body.theme-white table#sg td.given{color:#222;}
+body.theme-white table#sg td.sel{background:#90bce8;}
+body.theme-white table#sg td.hl{background:#e8f0f8;}
+body.theme-white table#sg td.sn{background:#b8d4ea;}
+body.theme-white table#sg td.err{color:#d32;}
+body.theme-white table#sg td.hnt{color:#1a7;}
+body.theme-white .np button,.theme-white .ctrl button,.theme-white .df button{background:#fff;color:#222;border:1px solid #bbb;}
+body.theme-white .df button.act{background:#dceeff;border-color:#5599cc;color:#1155aa;}
+body.theme-white .opts label{color:#444;}
+body.theme-white .themes span{color:#444;}
+body.theme-white .divider{border-top:1px solid #ddd;}
+body.theme-white #st{color:#555;}
+
+/* ── GRAY ── */
+body.theme-gray{background:#6b6b6b;}
+body.theme-gray table#sg{border:3px solid #444;}
+body.theme-gray table#sg td{background:#a0a0a0;color:#111;border:1px solid #888;}
+body.theme-gray table#sg tr:nth-child(3n) td{border-bottom:3px solid #444;}
+body.theme-gray table#sg td:nth-child(3n){border-right:3px solid #444;}
+body.theme-gray table#sg td.given{color:#111;}
+body.theme-gray table#sg td.sel{background:#7ab0d8;}
+body.theme-gray table#sg td.hl{background:#8f8f8f;}
+body.theme-gray table#sg td.sn{background:#8ab0c8;}
+body.theme-gray table#sg td.err{color:#c00;}
+body.theme-gray table#sg td.hnt{color:#085;}
+body.theme-gray .np button,.theme-gray .ctrl button,.theme-gray .df button{background:#a0a0a0;color:#111;border:1px solid #888;}
+body.theme-gray .df button.act{background:#7aaac8;border-color:#4477aa;color:#001833;}
+body.theme-gray .opts label{color:#111;}
+body.theme-gray .themes span{color:#111;}
+body.theme-gray .divider{border-top:1px solid #888;}
+body.theme-gray #st{color:#111;}
+
+/* ── BLACK ── */
+body.theme-black{background:#000;}
+body.theme-black table#sg{border:3px solid #fff;}
+body.theme-black table#sg td{background:#000;color:#fff;border:1px solid #555;}
+body.theme-black table#sg tr:nth-child(3n) td{border-bottom:3px solid #fff;}
+body.theme-black table#sg td:nth-child(3n){border-right:3px solid #fff;}
+body.theme-black table#sg td.given{color:#fff;}
+body.theme-black table#sg td.sel{background:#1a4a7a;}
+body.theme-black table#sg td.hl{background:#1a1a1a;}
+body.theme-black table#sg td.sn{background:#0f3358;}
+body.theme-black table#sg td.err{color:#f55;}
+body.theme-black table#sg td.hnt{color:#3d9;}
+body.theme-black .np button,.theme-black .ctrl button,.theme-black .df button{background:#000;color:#fff;border:1px solid #555;}
+body.theme-black .df button.act{background:#1a3a5a;border-color:#5599cc;color:#8bc8ff;}
+body.theme-black .opts label{color:#ccc;}
+body.theme-black .themes span{color:#ccc;}
+body.theme-black .divider{border-top:1px solid #444;}
+body.theme-black #st{color:#aaa;}
+
+/* 共通 */
 #app{width:100%;max-width:480px;}
 .df{display:flex;gap:6px;justify-content:center;margin-bottom:8px;}
-.df button{flex:1;font-size:13px;padding:6px 0;border:1px solid #bbb;border-radius:6px;background:#fff;color:#222;cursor:pointer;}
-.df button.act{background:#dceeff;border-color:#5599cc;color:#1155aa;}
-.opts{display:flex;gap:10px;justify-content:center;margin-bottom:8px;flex-wrap:wrap;}
-.opts label{font-size:13px;color:#444;display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none;}
+.df button{flex:1;font-size:13px;padding:6px 0;border-radius:6px;cursor:pointer;}
 .gw{display:flex;justify-content:center;margin-bottom:8px;}
-table#sg{border-collapse:collapse;border:3px solid #333;}
-table#sg td{
-  text-align:center;vertical-align:middle;
-  font-weight:500;cursor:pointer;
-  border:1px solid #aaa;background:#fff;color:#222;
-}
-table#sg tr:nth-child(3n) td{border-bottom:3px solid #333;}
-table#sg td:nth-child(3n){border-right:3px solid #333;}
-table#sg td.given{color:#222;pointer-events:none;font-weight:700;}
-table#sg td.sel{background:#90bce8;}
-table#sg td.hl{background:#e8f0f8;}
-table#sg td.sn{background:#b8d4ea;}
-table#sg td.err{color:#d32;}
-table#sg td.hnt{color:#1a7;}
+table#sg{border-collapse:collapse;}
+table#sg td{text-align:center;vertical-align:middle;font-weight:500;cursor:pointer;}
+table#sg td.given{pointer-events:none;font-weight:700;}
 .np{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:8px;}
-.np button{aspect-ratio:1;font-size:1.2rem;font-weight:500;border:1px solid #bbb;border-radius:6px;background:#fff;color:#222;cursor:pointer;}
-.np button:active{background:#eee;}
+.np button{aspect-ratio:1;font-size:1.2rem;font-weight:500;border-radius:6px;cursor:pointer;}
+.np button:active{opacity:.7;}
 .ctrl{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:4px;}
-.ctrl button{font-size:13px;padding:7px 14px;border:1px solid #bbb;border-radius:6px;background:#fff;color:#222;cursor:pointer;}
-.ctrl button:active{background:#eee;}
-#st{text-align:center;font-size:14px;color:#555;min-height:20px;}
+.ctrl button{font-size:13px;padding:7px 14px;border-radius:6px;cursor:pointer;}
+.ctrl button:active{opacity:.7;}
+#st{text-align:center;font-size:14px;min-height:20px;margin-bottom:8px;}
 .win{color:#1a7;font-weight:600;font-size:16px;}
+.divider{border:none;margin:8px 0;}
+.opts{display:flex;gap:10px;justify-content:center;margin-bottom:8px;flex-wrap:wrap;}
+.opts label{font-size:13px;display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none;}
+.themes{display:flex;gap:8px;justify-content:center;align-items:center;padding-top:4px;}
+.themes span{font-size:13px;margin-right:4px;}
+.themes button{width:28px;height:28px;border-radius:50%;cursor:pointer;outline:3px solid transparent;outline-offset:2px;transition:outline .15s;}
+.themes button.act{outline-color:#5599cc;}
+.themes button.tw{background:#fff;border:1px solid #bbb;}
+.themes button.tg{background:#a0a0a0;border:1px solid #666;}
+.themes button.tb{background:#000;border:1px solid #555;}
 </style>
 </head>
-<body>
+<body class="theme-white">
 <div id="app">
   <div class="df">
     <button class="act" onclick="setDiff('easy')">かんたん</button>
     <button onclick="setDiff('medium')">ふつう</button>
     <button onclick="setDiff('hard')">むずかしい</button>
-  </div>
-  <div class="opts">
-    <label><input type="checkbox" id="optHL" checked> 同列・同行ハイライト</label>
-    <label><input type="checkbox" id="optSN" checked> 同数ハイライト</label>
   </div>
   <div class="gw"><table id="sg"></table></div>
   <div class="np">
@@ -68,18 +119,34 @@ table#sg td.hnt{color:#1a7;}
     <button onclick="chk()">答え合わせ</button>
   </div>
   <div id="st"></div>
+  <hr class="divider">
+  <div class="opts">
+    <label><input type="checkbox" id="optHL" checked> 同列・同行ハイライト</label>
+    <label><input type="checkbox" id="optSN" checked> 同数ハイライト</label>
+  </div>
+  <div class="themes">
+    <span>背景</span>
+    <button class="tw act" onclick="setTheme('white')" title="白"></button>
+    <button class="tg"     onclick="setTheme('gray')"  title="グレー"></button>
+    <button class="tb"     onclick="setTheme('black')" title="黒"></button>
+  </div>
 </div>
 
 <script>
 let sol=[],puz=[],ug=[],sel=null,diff='easy',won=false;
 
+function setTheme(t){
+  document.body.className='theme-'+t;
+  document.querySelectorAll('.themes button').forEach(b=>b.classList.remove('act'));
+  document.querySelector('.themes button.t'+t[0]).classList.add('act');
+}
 function resizeCells(){
-  const w = document.getElementById('app').clientWidth - 8;
-  const size = Math.floor(Math.min(w, 440) / 9);
+  const w=document.getElementById('app').clientWidth-8;
+  const size=Math.floor(Math.min(w,440)/9);
   document.querySelectorAll('#sg td').forEach(td=>{
-    td.style.width = size+'px';
-    td.style.height = size+'px';
-    td.style.fontSize = Math.floor(size*0.5)+'px';
+    td.style.width=size+'px';
+    td.style.height=size+'px';
+    td.style.fontSize=Math.floor(size*.5)+'px';
   });
 }
 function setDiff(d){
@@ -130,20 +197,17 @@ function render(){
   resizeCells();hl();
 }
 function hl(){
-  const useHL = document.getElementById('optHL').checked;
-  const useSN = document.getElementById('optSN').checked;
+  const useHL=document.getElementById('optHL').checked;
+  const useSN=document.getElementById('optSN').checked;
   document.querySelectorAll('#sg td').forEach(td=>{
     const r=+td.dataset.r,c=+td.dataset.c;
     td.classList.remove('sel','hl','sn','err','hnt');
     if(!sel)return;
-    const {r:sr,c:sc}=sel,sv=ug[sr][sc];
-    if(r===sr&&c===sc){
-      td.classList.add('sel');
-    } else {
-      if(useHL && (r===sr||c===sc||r-r%3===sr-sr%3&&c-c%3===sc-sc%3))
-        td.classList.add('hl');
-      if(useSN && sv && ug[r][c]===sv)
-        td.classList.add('sn');
+    const{r:sr,c:sc}=sel,sv=ug[sr][sc];
+    if(r===sr&&c===sc){td.classList.add('sel');}
+    else{
+      if(useHL&&(r===sr||c===sc||r-r%3===sr-sr%3&&c-c%3===sc-sc%3))td.classList.add('hl');
+      if(useSN&&sv&&ug[r][c]===sv)td.classList.add('sn');
     }
     if(puz[r][c]===0&&ug[r][c]&&ug[r][c]!==sol[r][c])td.classList.add('err');
   });
