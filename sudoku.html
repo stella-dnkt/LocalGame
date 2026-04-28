@@ -1,14 +1,24 @@
-
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数独</title>
 <style>
-#sw3{padding:1rem 0;font-family:sans-serif;}
-h2.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:sans-serif;background:#f5f5f5;display:flex;justify-content:center;padding:1rem;}
+#app{width:100%;max-width:480px;background:#fff;border-radius:12px;padding:1.2rem;box-shadow:0 2px 12px rgba(0,0,0,.1);}
+h1{text-align:center;font-size:1.2rem;font-weight:600;margin-bottom:1rem;color:#333;}
+.df{display:flex;gap:6px;justify-content:center;margin-bottom:1rem;}
+.df button{flex:1;font-size:13px;padding:6px 0;border:1px solid #bbb;border-radius:6px;background:#fff;color:#222;cursor:pointer;}
+.df button.act{background:#dceeff;border-color:#5599cc;color:#1155aa;}
 .gw{display:flex;justify-content:center;margin-bottom:1rem;}
-table#sg{border-collapse:collapse;border:3px solid #333;}
+table#sg{border-collapse:collapse;border:3px solid #333;width:100%;}
 table#sg td{
-  width:38px;height:38px;text-align:center;vertical-align:middle;
-  font-size:18px;font-weight:500;cursor:pointer;
+  text-align:center;vertical-align:middle;
+  font-weight:500;cursor:pointer;
   border:1px solid #aaa;background:#fff;color:#222;
-  box-sizing:border-box;
+  /* サイズはJS側でviewportに合わせる */
 }
 table#sg tr:nth-child(3n) td{border-bottom:3px solid #333;}
 table#sg td:nth-child(3n){border-right:3px solid #333;}
@@ -18,47 +28,57 @@ table#sg td.hl{background:#e8f0f8;}
 table#sg td.sn{background:#b8d4ea;}
 table#sg td.err{color:#d32;}
 table#sg td.hnt{color:#1a7;}
-.np{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:1rem;}
-.np button,.ctrl button,.df button{
-  border:1px solid #bbb;border-radius:6px;background:#fff;color:#222;
-  cursor:pointer;font-size:14px;padding:0;
-}
-.np button{width:36px;height:36px;font-size:16px;}
-.np button:hover,.ctrl button:hover,.df button:hover{background:#eee;}
-.ctrl{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:.5rem;}
-.ctrl button{font-size:13px;padding:6px 14px;}
-.df{display:flex;gap:8px;justify-content:center;margin-bottom:1rem;}
-.df button{font-size:13px;padding:5px 14px;}
-.df button.act{background:#dceeff;border-color:#5599cc;color:#1155aa;}
-#st{text-align:center;font-size:14px;color:#555;min-height:22px;}
+.np{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:1rem;}
+.np button{aspect-ratio:1;font-size:1.2rem;font-weight:500;border:1px solid #bbb;border-radius:6px;background:#fff;color:#222;cursor:pointer;}
+.np button:active{background:#eee;}
+.ctrl{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:.5rem;}
+.ctrl button{font-size:13px;padding:7px 14px;border:1px solid #bbb;border-radius:6px;background:#fff;color:#222;cursor:pointer;}
+.ctrl button:active{background:#eee;}
+#st{text-align:center;font-size:14px;color:#555;min-height:22px;margin-top:.3rem;}
 .win{color:#1a7;font-weight:600;font-size:16px;}
 </style>
-
-<div id="sw3">
-<h2 class="sr-only">数独ゲーム</h2>
-<div class="df">
-  <button class="act" onclick="setDiff('easy')">かんたん</button>
-  <button onclick="setDiff('medium')">ふつう</button>
-  <button onclick="setDiff('hard')">むずかしい</button>
-</div>
-<div class="gw"><table id="sg"></table></div>
-<div class="np">
-  <button onclick="inp(1)">1</button><button onclick="inp(2)">2</button>
-  <button onclick="inp(3)">3</button><button onclick="inp(4)">4</button>
-  <button onclick="inp(5)">5</button><button onclick="inp(6)">6</button>
-  <button onclick="inp(7)">7</button><button onclick="inp(8)">8</button>
-  <button onclick="inp(9)">9</button><button onclick="inp(0)">✕</button>
-</div>
-<div class="ctrl">
-  <button onclick="newGame()">新しいゲーム</button>
-  <button onclick="hint()">ヒント ↗</button>
-  <button onclick="chk()">答え合わせ</button>
-</div>
-<div id="st"></div>
+</head>
+<body>
+<div id="app">
+  <h1>数独</h1>
+  <div class="df">
+    <button class="act" onclick="setDiff('easy')">かんたん</button>
+    <button onclick="setDiff('medium')">ふつう</button>
+    <button onclick="setDiff('hard')">むずかしい</button>
+  </div>
+  <div class="gw"><table id="sg"></table></div>
+  <div class="np">
+    <button onclick="inp(1)">1</button>
+    <button onclick="inp(2)">2</button>
+    <button onclick="inp(3)">3</button>
+    <button onclick="inp(4)">4</button>
+    <button onclick="inp(5)">5</button>
+    <button onclick="inp(6)">6</button>
+    <button onclick="inp(7)">7</button>
+    <button onclick="inp(8)">8</button>
+    <button onclick="inp(9)">9</button>
+    <button onclick="inp(0)">✕</button>
+  </div>
+  <div class="ctrl">
+    <button onclick="newGame()">新しいゲーム</button>
+    <button onclick="hint()">ヒント</button>
+    <button onclick="chk()">答え合わせ</button>
+  </div>
+  <div id="st"></div>
 </div>
 
 <script>
 let sol=[],puz=[],ug=[],sel=null,diff='easy',won=false;
+
+// グリッドのセルサイズをviewportに合わせる
+function resizeCells(){
+  const size = Math.floor((Math.min(document.getElementById('app').clientWidth - 24, 440)) / 9);
+  document.querySelectorAll('#sg td').forEach(td=>{
+    td.style.width = size+'px';
+    td.style.height = size+'px';
+    td.style.fontSize = Math.floor(size*0.5)+'px';
+  });
+}
 
 function setDiff(d){
   diff=d;
@@ -105,6 +125,7 @@ function render(){
     }
     t.appendChild(tr);
   }
+  resizeCells();
   hl();
 }
 function hl(){
@@ -159,5 +180,8 @@ document.addEventListener('keydown',e=>{
   if(n>=1&&n<=9)inp(n);
   else if(['Backspace','Delete','0'].includes(e.key))inp(0);
 });
+window.addEventListener('resize',resizeCells);
 newGame();
 </script>
+</body>
+</html>
